@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melody Product - Music Metadata Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #ffffff;
+        }
+        .music-card {
+            transition: transform 0.2s;
+        }
+        .music-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Melody Product</h1>
+            <p class="text-xl text-gray-600">Search for music using natural language</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="flex flex-col space-y-4">
+                <textarea 
+                    id="promptInput"
+                    class="w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows="4"
+                    placeholder="Describe the type of music you're looking for..."></textarea>
+                <button 
+                    id="searchButton"
+                    class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Results will be inserted here -->
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+            <div class="max-w-2xl mx-auto">
+                <div class="flex items-center space-x-4">
+                    <input 
+                        type="email"
+                        id="emailInput"
+                        class="flex-1 p-2 border rounded-lg"
+                        placeholder="Enter your email for beta updates">
+                    <button 
+                        id="subscribeButton"
+                        class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                        Subscribe
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const searchButton = document.getElementById('searchButton');
+        const subscribeButton = document.getElementById('subscribeButton');
+        const resultsDiv = document.getElementById('results');
+
+        searchButton.addEventListener('click', async () => {
+            const prompt = document.getElementById('promptInput').value;
+            if (!prompt) return;
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt }),
+                });
+
+                const data = await response.json();
+                displayResults(data.results);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        subscribeButton.addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value;
+            if (!email) return;
+
+            try {
+                const response = await fetch('/api/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+
+                const data = await response.json();
+                alert(data.message || 'Subscribed successfully!');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        function displayResults(results) {
+            resultsDiv.innerHTML = '';
+            
+            results.forEach(track => {
+                const card = document.createElement('div');
+                card.className = 'music-card bg-white rounded-lg shadow-md p-4';
+                
+                card.innerHTML = `
+                    <div class="mb-4">
+                        <img src="${track.album_art || 'https://via.placeholder.com/150'}" 
+                             alt="${track.name}"
+                             class="w-full h-48 object-cover rounded-lg">
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">${track.name}</h3>
+                    <p class="text-gray-600 mb-2">${track.artist}</p>
+                    <p class="text-sm text-gray-500 mb-4">${track.album}</p>
+                    <div class="flex justify-between items-center">
+                        <a href="${track.spotify_url}" 
+                           target="_blank"
+                           class="text-blue-500 hover:text-blue-600">
+                            Listen on Spotify
+                        </a>
+                        ${track.preview_url ? `
+                            <audio controls class="w-32">
+                                <source src="${track.preview_url}" type="audio/mpeg">
+                            </audio>
+                        ` : ''}
+                    </div>
+                `;
+                
+                resultsDiv.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html> 
